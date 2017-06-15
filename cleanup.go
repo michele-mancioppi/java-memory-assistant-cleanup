@@ -91,14 +91,14 @@ func CleanUp(fs afero.Fs, cfg Config) ([]string, error) {
 
 	heapDumpFiles := filter.Choose(files, isHeapDumpFile).([]os.FileInfo)
 
-	if len(heapDumpFiles) < maxDumpCount {
+	if len(heapDumpFiles) < maxDumpCount || maxDumpCount < 1 {
 		return []string{}, nil
 	}
 
 	var deletedFiles []string
-	sort.Sort(byName(heapDumpFiles))
+	sort.Sort(sort.Reverse(byName(heapDumpFiles)))
 
-	for _, file := range heapDumpFiles[:maxDumpCount] {
+	for _, file := range heapDumpFiles[maxDumpCount-1:] {
 		path := heapDumpFolder + "/" + file.Name()
 		var err = fs.Remove(path)
 		if err != nil {

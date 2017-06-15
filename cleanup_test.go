@@ -86,7 +86,7 @@ var _ = Describe("Run clean_up", func() {
 
 		It("with max one heap dump, it deletes all three files", func() {
 			deletedFiles, err := CleanUp(fs, Config{
-				MaxDumpCount:   3,
+				MaxDumpCount:   1,
 				HeapDumpFolder: "dumps"})
 
 			Expect(err).To(BeNil())
@@ -109,6 +109,47 @@ var _ = Describe("Run clean_up", func() {
 			Expect(fs).ToNot(HaveFile("dumps/2.hprof"))
 			Expect(fs).To(HaveFile("dumps/3.hprof"))
 		})
+	})
+
+	Context("with repeated invocations", func() {
+
+		BeforeEach(func() {
+			fs.MkdirAll("dumps", os.ModeDir)
+			fs.Create("dumps/1.hprof")
+			fs.Create("dumps/2.hprof")
+			fs.Create("dumps/not.a.dump")
+		})
+
+		AfterEach(func() {
+			if _, err := fs.Stat("dumps/not.a.dump"); os.IsNotExist(err) {
+				Fail("A non-dump file has been deleted")
+			}
+		})
+
+		It("is idempotent", func() {
+			deletedFiles_1, err_1 := CleanUp(fs, Config{
+				MaxDumpCount:   2,
+				HeapDumpFolder: "dumps",
+			})
+
+			Expect(err_1).To(BeNil())
+			Expect(deletedFiles_1).To(ConsistOf("dumps/1.hprof"))
+
+			Expect(fs).ToNot(HaveFile("dumps/1.hprof"))
+			Expect(fs).To(HaveFile("dumps/2.hprof"))
+
+			// Test repeated invocations
+			deletedFiles_2, err_2 := CleanUp(fs, Config{
+				MaxDumpCount:   2,
+				HeapDumpFolder: "dumps",
+			})
+
+			Expect(err_2).To(BeNil())
+			Expect(deletedFiles_2).To(BeEmpty())
+
+			Expect(fs).To(HaveFile("dumps/2.hprof"))
+		})
+
 	})
 
 	Context("with no heap dump files", func() {
