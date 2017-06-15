@@ -32,7 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for deletedFile := range deletedFiles {
+	for _, deletedFile := range deletedFiles {
 		fmt.Printf("Heap dump '%v' deleted\n", deletedFile)
 	}
 }
